@@ -1,0 +1,84 @@
+---
+- name: Checking if Package is Installed
+  package_facts:
+- block:
+    - name: Checking if Archive is Unpacked
+      stat:
+        path: ./pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version.split('-').0 }}
+      register: _pg_rex
+    - block:
+        - name: Downloading Archive
+          get_url:
+            url: https://github.com/ossc-db/PG-REX-tools/releases/download/PG-REX_{{ postgresql_version }}_{{ pg_rex_tools_version.split('.').0 }}/pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version }}.tar.gz
+            dest: .
+        - name: Unpacking Archive
+          unarchive:
+            src: pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version }}.tar.gz
+            dest: .
+            remote_src: true
+      when: not _pg_rex.stat.exists
+    - name: Removing Archive
+      file:
+        path: pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version }}.tar.gz
+        state: absent
+    - name: Finding Packages
+      find:
+        paths: ./pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version.split('-').0 }}
+        patterns: '*.rpm'
+      register: _find
+    - name: Installing PG-REX Operation Tools
+      yum:
+        name: "{{ _find.files | json_query('[*].path') + ['lsof', 'perl-File-Compare'] }}"
+        disable_gpg_check: true
+  when: "'pg-rex_operation_tools_script' not in ansible_facts.packages"
+- name: Removing Directory Extracted from Archive
+  file:
+    path: ./pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version.split('-').0 }}
+    state: absent
+- name: Editing Config File
+  lineinfile:
+    path: /etc/pg-rex_tools.conf
+    regex: ^({{ item.0 }}) = (?:[^ ,]+(?:\s*,\s*[^ ,]+)*)?(\s+#.*)$
+    line: \1 = {{ item.1 }}\2
+    backrefs: true
+  loop:
+    - - D_LAN_IPAddress
+      - "{{ hostvars | json_query('*.ansible_%s.ipv4.address' | format(d_lan_interface)) | join(',') }}"
+    - - IC_LAN_IPAddress
+      - >-
+        {%- for item in ic_lan_interfaces -%}
+        {{ '(%s)' | format(hostvars | json_query('*.ansible_%s.ipv4.address' | format(item)) | join(',')) }}
+        {%- if item != ic_lan_interfaces[-1] -%},{%- endif -%}
+        {%- endfor -%}
+    - - Archive_dir
+      - "{{ postgresql_archive_directory }}"
+    - - IPADDR_STANDBY
+      - disable
+    - - PEER_NODE_SSH_PASS_MODE
+      - nopass
+    - - BACKUP_NODE_SSH_PASS_MODE
+      - nopass
+    - - HACLUSTER_NAME
+      - "{{ pacemaker_cluster_name }}"
+- name: Gathering SSH Host Key
+  command:
+    cmd: ssh-keyscan {{ hostvars[item]['ansible_' + d_lan_interface].ipv4.address }}
+  loop: "{{ groups.all | difference([ansible_hostname]) }}"
+  register: _ssh_keygen
+  changed_when: false
+- name: Adding SSH Host Key to Known Hosts File
+  known_hosts:
+    path: /root/.ssh/known_hosts
+    name: "{{ item.cmd.1 }}"
+    key: "{{ item.stdout }}"
+  loop: "{{ _ssh_keygen.results }}"
+- name: Creating SSH Key Pair
+  openssh_keypair:
+    path: /root/.ssh/id_rsa
+  register: _openssh_keypair
+- name: Adding SSH Key to Authorized Keys File
+  authorized_key:
+    user: root
+    key: "{{ _openssh_keypair.public_key }}"
+  delegate_to: "{{ item }}"
+  loop: "{{ groups.all | difference([ansible_hostname]) }}"

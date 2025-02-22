@@ -1,0 +1,33 @@
+---
+s_lan_interface: eth1
+d_lan_interface: eth2
+ic_lan_interfaces:
+  - eth3
+  - eth4
+a_lan_interface: eth5
+system_locale: ja_JP.UTF-8
+system_timezone: Asia/Tokyo
+pacemaker_password: hapasswd
+pacemaker_cluster_name: pgrex_cluster
+postgresql_version: 16
+postgresql_password: pgpass
+postgresql_data_directory: /dbfp/pgdata/data
+postgresql_wal_directory: /dbfp/pgwal/pg_wal
+postgresql_archive_directory: /dbfp/pgarch/arc1
+postgresql_port: 5432
+postgresql_replication_user: repuser
+postgresql_replication_password: reppasswd
+postgresql_replication_address: 192.168.57.111
+postgresql_primary_address: 192.168.56.111
+postgresql_standby_address: 192.168.56.112
+monitored_addresses:
+  - 192.168.56.2
+monitored_devices:
+  - /dev/sda
+ipmi_addresses:
+  node-1: 172.23.135.101
+  node-2: 172.23.135.102
+ipmi_user: Administrator
+ipmi_password: adminpass
+pm_extra_tools_version: 1.6-1
+pg_rex_tools_version: 3.0-1

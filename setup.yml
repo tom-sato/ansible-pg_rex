@@ -1,0 +1,10 @@
+---
+- hosts: all
+  become: true
+  roles:
+    - common
+    - pacemaker
+    - postgresql
+    - virtualbmc-setup
+    - pm_extra_tools
+    - pg_rex_tools

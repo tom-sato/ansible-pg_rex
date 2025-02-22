@@ -1,0 +1,48 @@
+---
+- name: Checking if VirtualBMC Server is Running
+  command:
+    cmd: pgrep -f ./venv/bin/vbmcd
+  register: _pgrep
+  changed_when: false
+  failed_when: false
+- block:
+    - name: Gathering Virtual Machine Information
+      shell:
+        cmd: /mnt/c/Program\ Files/Oracle/VirtualBox/VBoxManage.exe showvminfo $(cat ./.vagrant/machines/{{ item.key }}/virtualbox/id) --machinereadable | grep -E ^name= | cut -d \" -f 2
+      loop: "{{ ipmi_addresses | dict2items }}"
+      register: _vboxmanage
+      changed_when: false
+    - name: Checking if VirtualBMC is Running
+      command:
+        cmd: ./venv/bin/vbmc list -f value
+      register: _vbmc
+      changed_when: false
+    - name: Stopping VirtualBMC
+      command:
+        cmd: ./venv/bin/vbmc stop {{ item.stdout }}
+      become: true
+      when: _vbmc.stdout is search(item.stdout + ' running')
+      loop: "{{ _vboxmanage.results }}"
+    - name: Removing VirtualBMC
+      command:
+        cmd: ./venv/bin/vbmc delete {{ item.stdout }}
+      become: true
+      when: _vbmc.stdout is search(item.stdout)
+      loop: "{{ _vboxmanage.results }}"
+  when: _pgrep.rc == 0
+- name: Checking if IP Address is Added
+  command:
+    cmd: ip addr
+  register: _ip
+  changed_when: false
+- name: Removing IP Address
+  command:
+    cmd: ip addr del {{ item.value }}/{{ '%s/%s' | format(ansible_facts.default_ipv4.network, ansible_facts.default_ipv4.netmask) | ipaddr('prefix') }} dev {{ ansible_facts.default_ipv4.interface }}
+  become: true
+  when: _ip.stdout is search(item.value)
+  loop: "{{ ipmi_addresses | dict2items }}"
+- name: Stopping VirtualBMC Server
+  command:
+    cmd: kill {{ _pgrep.stdout }}
+  become: true
+  when: _pgrep.rc == 0

@@ -1,0 +1,57 @@
+---
+- name: Installing Pacemaker
+  yum:
+    name:
+      - pcs
+      - pacemaker
+      - fence-agents-all
+    enablerepo: highavailability
+- name: Starting pcsd Service
+  service:
+    name: pcsd
+    state: started
+    enabled: true
+- name: Checking if Password for hacluster User is Set
+  command:
+    cmd: passwd -S hacluster
+  register: _passwd
+  changed_when: false
+- name: Setting Password for hacluster User
+  user:
+    name: hacluster
+    password: "{{ pacemaker_password | password_hash('sha512') }}"
+  when: _passwd.stdout is not search('PS')
+- block:
+    - name: Checking if hacluster User is Authenticated
+      stat:
+        path: /var/lib/pcsd/known-hosts
+      register: _known_hosts
+    - name: Authenticating hacluster User
+      command:
+        cmd: >
+          pcs host auth
+          {% for item in groups.all %}
+          {{ hostvars[item].ansible_fqdn }} addr={{ hostvars[item]['ansible_' + a_lan_interface].ipv4.address }}
+          {% endfor %}
+          -u hacluster -p {{ pacemaker_password }}
+      when: not _known_hosts.stat.exists
+  run_once: true
+- name: Enabling Trigger Panic on Failure
+  lineinfile:
+    path: /etc/sysconfig/pacemaker
+    insertafter: '^# Default: PCMK_fail_fast="no"'
+    line: PCMK_fail_fast=yes
+- name: Disabling ACPI Soft-Off
+  lineinfile:
+    path: /etc/systemd/logind.conf
+    regexp: ^#?(HandlePowerKey)=.*
+    line: \1=ignore
+    backrefs: true
+  register: _logind_conf
+- name: Restarting logind Service
+  service:
+    name: systemd-logind
+    state: restarted
+  when: _logind_conf.changed
+
+-

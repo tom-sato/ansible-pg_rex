@@ -1,0 +1,45 @@
+---
+- block:
+    - name: Checking out Git Repository
+      git:
+        repo: https://github.com/kskmori/virtualbmc-vbox.git
+        dest: ./repo
+        version: devel-vbox-2.0
+    - name: Creating Python Virtual Environment
+      command:
+        cmd: python3 -m venv --without-pip ./venv
+        creates: ./venv/bin/activate
+    - name: Installing pip
+      shell:
+        cmd: |
+          source ./venv/bin/activate
+          curl https://bootstrap.pypa.io/get-pip.py | python3
+        creates: ./venv/bin/pip3
+        executable: /bin/bash
+    - name: Installing VirtualBMC
+      shell:
+        cmd: |
+          source ./venv/bin/activate
+          pip3 install -e ./repo
+        creates: ./venv/bin/vbmcd
+        executable: /bin/bash
+    - name: Creating Config Directory
+      file:
+        path: ./vbmc
+        state: directory
+    - name: Creating Config File
+      blockinfile:
+        path: ./vbmc/vbmc.conf
+        block: |
+          [default]
+          config_dir: {{ playbook_dir }}/vbmc
+          pid_file: {{ playbook_dir }}/vbmc/vbmc.pid
+          [log]
+          logfile: {{ playbook_dir }}/vbmc/vbmc.log
+          debug: true
+          [vbox]
+          vbox_user: {{ lookup('env', 'USER') }}
+        create: true
+  become: false
+  delegate_to: localhost
+  run_once: true

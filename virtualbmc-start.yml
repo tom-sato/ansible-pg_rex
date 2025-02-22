@@ -1,0 +1,8 @@
+---
+- hosts: localhost
+  vars_prompt:
+    - name: ansible_become_pass
+      prompt: become password
+      private: true
+  roles:
+    - virtualbmc-start
