@@ -3,38 +3,52 @@
   package_facts:
 - block:
     - name: Checking if Archive is Unpacked
-      stat:
-        path: ./pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version.split('-').0 }}
-      register: _pg_rex
+      find:
+        paths: ./pg-rex
+      register: _find
     - block:
-        - name: Downloading Archive
-          get_url:
-            url: https://github.com/ossc-db/PG-REX-tools/releases/download/PG-REX_{{ postgresql_version }}_{{ pg_rex_tools_version.split('.').0 }}/pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version }}.tar.gz
-            dest: .
+        - name: Creating Destination Directory
+          file:
+            path: ./pg-rex
+            state: directory
         - name: Unpacking Archive
           unarchive:
-            src: pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version }}.tar.gz
-            dest: .
+            src: "{{ pg_rex_tools_download_urls[ansible_distribution_major_version] }}"
+            dest: "{{ ansible_env.PWD }}/pg-rex"
             remote_src: true
-      when: not _pg_rex.stat.exists
-    - name: Removing Archive
-      file:
-        path: pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version }}.tar.gz
-        state: absent
+      when: _find.matched == 0
     - name: Finding Packages
       find:
-        paths: ./pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version.split('-').0 }}
-        patterns: '*.rpm'
+        paths: ./pg-rex
+        patterns: "{{ '*.el%s.*.rpm' | format(ansible_distribution_major_version) }}"
+        recurse: true
       register: _find
     - name: Installing PG-REX Operation Tools
       yum:
-        name: "{{ _find.files | json_query('[*].path') + ['lsof', 'perl-File-Compare'] }}"
+        name: "{{ items | flatten(1) | select() }}"
         disable_gpg_check: true
+      vars:
+        items:
+          - "{{ _find.files | json_query('[*].path') }}"
+          - lsof
+          - "{{ ansible_distribution_major_version is version('9', '>=') | ternary('perl-File-Compare', '') }}"
   when: "'pg-rex_operation_tools_script' not in ansible_facts.packages"
-- name: Removing Directory Extracted from Archive
+- name: Removing Destination Directory
   file:
-    path: ./pg-rex{{ postgresql_version }}-{{ pg_rex_tools_version.split('-').0 }}
+    path: ./pg-rex
     state: absent
+- name: Fixing to Skip PostgreSQL Version Check
+  lineinfile:
+    path: /usr/local/share/perl5/{{ ansible_distribution_major_version is version('9', '>=') | ternary('5.32/', '') }}PGRex/common.pm
+    regexp: ^(\s+)(if \(int\(\$version_num / 10000\) != \d+)(\){)$
+    line: \1#\2\3\n\1\2 && 0\3
+    backrefs: true
+- name: Fixing to Remove --no-manifest from pg_basebackup
+  replace:
+    path: /usr/local/bin/pg-rex_standby_start
+    regexp: ^(\s+)(.+)(--no-manifest )(.+)$
+    replace: \1#\2\3\4\n\1\2\4
+  when: postgresql_version is version('12', '<=')
 - name: Editing Config File
   lineinfile:
     path: /etc/pg-rex_tools.conf
@@ -54,6 +68,8 @@
       - "{{ postgresql_archive_directory }}"
     - - IPADDR_STANDBY
       - disable
+    - - PGPATH
+      - /usr/pgsql-{{ postgresql_version }}/bin
     - - PEER_NODE_SSH_PASS_MODE
       - nopass
     - - BACKUP_NODE_SSH_PASS_MODE
@@ -66,6 +82,10 @@
   loop: "{{ groups.all | difference([ansible_hostname]) }}"
   register: _ssh_keygen
   changed_when: false
+- name: Creating SSH Directory
+  file:
+    path: /root/.ssh
+    state: directory
 - name: Adding SSH Host Key to Known Hosts File
   known_hosts:
     path: /root/.ssh/known_hosts

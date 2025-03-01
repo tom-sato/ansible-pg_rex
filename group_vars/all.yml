@@ -28,5 +28,9 @@ ipmi_addresses:
   node-2: 172.23.135.102
 ipmi_user: Administrator
 ipmi_password: adminpass
-pm_extra_tools_version: 1.6-1
-pg_rex_tools_version: 3.0-1
+pm_extra_tools_download_urls:
+  '8': https://github.com/linux-ha-japan/pm_extra_tools/releases/download/pm_extra_tools-1.6/pm_extra_tools-1.6-1.el8.noarch.rpm
+  '9': https://github.com/linux-ha-japan/pm_extra_tools/releases/download/pm_extra_tools-1.6/pm_extra_tools-1.6-1.el9.noarch.rpm
+pg_rex_tools_download_urls: 
+  '8': https://github.com/ossc-db/PG-REX-tools/releases/download/PG-REX_15_5/pg-rex15-5.0-1.tar.gz
+  '9': https://github.com/ossc-db/PG-REX-tools/releases/download/PG-REX_16_3/pg-rex16-3.0-1.tar.gz

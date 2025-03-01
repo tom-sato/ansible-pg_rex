@@ -1,4 +1,11 @@
 ---
+- name: Installing Python
+  raw: which python3 || (yum -qy install python3 && exit 100)
+  register: _yum
+  changed_when: _yum.rc != 0
+  failed_when: _yum.rc not in [0, 100]
+- name: Gathering Facts
+  setup:
 - name: Checking if Locale Data is Installed
   command:
     cmd: localectl list-locales

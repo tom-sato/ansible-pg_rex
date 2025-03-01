@@ -5,7 +5,7 @@
       - pcs
       - pacemaker
       - fence-agents-all
-    enablerepo: highavailability
+    enablerepo: "{{ ansible_distribution_major_version is version('9', '>=') | ternary('highavailability', 'ha') }}"
 - name: Starting pcsd Service
   service:
     name: pcsd

@@ -5,6 +5,16 @@
 - name: Installing Yum Repository
   yum:
     name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-{{ ansible_distribution_major_version }}-{{ ansible_architecture }}/pgdg-redhat-repo-latest.noarch.rpm
+- name: Checking if PostgreSQL Module is Enabled
+  command:
+    cmd: dnf -y module list --disabled postgresql
+  register: _dnf
+  changed_when: false
+  failed_when: false
+- name: Disabling PostgreSQL Module
+  command:
+    cmd: dnf -y module disable postgresql
+  when: _dnf.rc != 0
 - name: Installing PostgreSQL
   yum:
     name:

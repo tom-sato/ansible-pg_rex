@@ -1,10 +1,11 @@
 ---
 - name: Installing Pacemaker Extra Tools
   yum:
-    name: https://github.com/linux-ha-japan/pm_extra_tools/releases/download/pm_extra_tools-{{ pm_extra_tools_version.split('-').0 }}/pm_extra_tools-{{ pm_extra_tools_version }}.el{{ ansible_distribution_major_version }}.noarch.rpm
+    name: "{{ pm_extra_tools_download_urls[ansible_distribution_major_version] }}"
     disable_gpg_check: true
 - block:
-    - set_fact:
+    - name: Getting CIDR Prefixes
+      set_fact:
         _s_lan_prefix: "{{ '%s/%s' | format(ansible_facts[s_lan_interface].ipv4.network, ansible_facts[s_lan_interface].ipv4.netmask) | ipaddr('prefix') }}"
         _d_lan_prefix: "{{ '%s/%s' | format(ansible_facts[d_lan_interface].ipv4.network, ansible_facts[d_lan_interface].ipv4.netmask) | ipaddr('prefix') }}"
     - name: Templating Resource Definition File

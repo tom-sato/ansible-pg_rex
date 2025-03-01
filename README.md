@@ -11,13 +11,14 @@ The playbook is tested with the following software versions:
 * VirtualBox 7.1.x
 * Vagrant 2.4.x
 * Vagrant box
+  * [rockylinux/8](https://app.vagrantup.com/rockylinux/boxes/8)
   * [rockylinux/9](https://app.vagrantup.com/rockylinux/boxes/9)
 * Ansible 2.10.x
-* PG-REX 16
-  * PostgreSQL 16.x
+* PG-REX 12 - 16
+  * PostgreSQL 12.x - 16.x
   * Pacemaker 2.1.x
   * Pacemaker Extra Tools ([pm\_extra\_tools](https://github.com/linux-ha-japan/pm_extra_tools)) 1.6
-  * PG-REX Operation Tools ([PG-REX-tools](https://github.com/ossc-db/PG-REX-tools)) 16.0
+  * PG-REX Operation Tools ([PG-REX-tools](https://github.com/ossc-db/PG-REX-tools)) 15.1 on EL8, 16.0 on EL9
 * VirtualBMC VirtualBox-ported edition ([virtualbmc-vbox](https://github.com/kskmori/virtualbmc-vbox)) devel2.0
 
 Usage
