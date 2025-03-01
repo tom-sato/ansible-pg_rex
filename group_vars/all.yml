@@ -21,9 +21,8 @@ postgresql_replication_address: 192.168.57.111
 postgresql_primary_address: 192.168.56.111
 postgresql_standby_address: 192.168.56.112
 monitored_addresses:
-  - 192.168.56.2
-monitored_devices:
-  - /dev/sda
+  - "{{ ansible_facts.default_ipv4.gateway }}"
+monitored_devices: "{{ ansible_facts.devices.keys() | map('regex_replace', '^', '/dev/') }}"
 ipmi_addresses:
   node-1: 172.23.135.101
   node-2: 172.23.135.102
