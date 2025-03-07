@@ -3,6 +3,8 @@ Ansible Playbook for PG-REX
 
 Ansible playbook that set up a PostgreSQL cluster with Pacemaker based on the PG-REX standard.
 
+![System Architecture](./img/system_architecture.png)
+
 Requirements
 ------------
 
@@ -92,6 +94,47 @@ Daemon Status:
   pacemaker: active/disabled
   pcsd: active/enabled
 ```
+
+Playbooks
+---------
+
+The following playbooks are available:
+
+* `setup.yml` - Set up a PostgreSQL cluster with Pacemaker based on the PG-REX standard.
+* `virtualbmc-start.yml` - Starts the VirtualBMC server.
+* `virtualbmc-stop.yml` - Stops the VirtualBMC Server.
+
+Variables
+---------
+
+The following variables are available in the `./group_vars/all.yml` file:
+
+* `s_lan_interface` - Specifies the interface name for the service provision network "S-LAN". The default is `eth1`.
+* `d_lan_interface` - Specifies the interface name for the interconnect communication network "IC-LAN". The default is `eth2`.
+* `ic_lan_interfaces` - Specifies a list of interface names for the data transfer network "D-LAN". The default is `[eth3, eth4]`.
+* `a_lan_interface` - Specifies the interface name for the administration network "Administration LAN". The default is `eth5`.
+* `system_locale` - Specifies the system locale. The default is `ja_JP.UTF-8`.
+* `system_timezone` - Specifies the system time zone. The default is `Asia/Tokyo`.
+* `pacemaker_password` - Specifies the password for the `hacluster` user. The default is `hapasswd`.
+* `pacemaker_cluster_name` - Specifies the cluster name. The default is `pgrex_cluster`.
+* `postgresql_version` - Specifies the PostgreSQL version. The default is `16`.
+* `postgresql_password` - Specifies the password for the `postgres` user. The default is `pgpasswd`.
+* `postgresql_data_directory` - Specifies the data directory path. The default is `/dbfp/pgdata/data`.
+* `postgresql_wal_directory` - Specifies the WAL directory path. The default is `/dbfp/pgwal/pg_wal`.
+* `postgresql_archive_directory` - Specifies the archive directory path. The default is `/dbfp/pgarch/arc1`.
+* `postgresql_port` - Specifies the port number for PostgreSQL server. The default is `5432`.
+* `postgresql_replication_user` - Specifies the username for replication connection. The default is `repuser`.
+* `postgresql_replication_password` - Specifies the password for the replication user. The default is `reppasswd`.
+* `postgresql_replication_address` - Specifies the virtual IP address for the replication connection. The default is `192.168.59.111`.
+* `postgresql_primary_address` - Specifies the virtual IP address for the primary connection. The default is `192.168.56.111`.
+* `postgresql_standby_address` - Specifies the virtual IP address for the standby connection. The default is `192.168.56.112`.
+* `monitored_addresses` - Specifies the IP addresses to be monitored for health checks. The default is the server's default gateway IP address.
+* `monitored_devices` - Specifies the storage devices to be monitored for health checks. The default is all storage devices on the server.
+* `ipmi_addresses` - Specifies a hash of the IP address for IPMI connection keyed by the hostname. The default is `{node-1: 172.23.135.101, node-2: 172.23.135.102}`.
+* `ipmi_user` - Specifies the username for IPMI connection. The default is `Administrator`.
+* `ipmi_password` - Specifies the password for the IPMI user. The default is `adminpasswd`.
+* `pm_extra_tools_download_urls`- Specifies a hash of the Pacemaker Extra Tools download URL keyed by the major version of the distribution.
+* `pg_rex_tools_download_urls`- Specifies a hash of the PG-REX Operation Tools download URL keyed by the major version of the distribution.
 
 License
 -------

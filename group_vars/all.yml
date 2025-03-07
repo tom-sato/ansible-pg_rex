@@ -10,7 +10,7 @@ system_timezone: Asia/Tokyo
 pacemaker_password: hapasswd
 pacemaker_cluster_name: pgrex_cluster
 postgresql_version: 16
-postgresql_password: pgpass
+postgresql_password: pgpasswd
 postgresql_data_directory: /dbfp/pgdata/data
 postgresql_wal_directory: /dbfp/pgwal/pg_wal
 postgresql_archive_directory: /dbfp/pgarch/arc1
@@ -27,7 +27,7 @@ ipmi_addresses:
   node-1: 172.23.135.101
   node-2: 172.23.135.102
 ipmi_user: Administrator
-ipmi_password: adminpass
+ipmi_password: adminpasswd
 pm_extra_tools_download_urls:
   '8': https://github.com/linux-ha-japan/pm_extra_tools/releases/download/pm_extra_tools-1.6/pm_extra_tools-1.6-1.el8.noarch.rpm
   '9': https://github.com/linux-ha-japan/pm_extra_tools/releases/download/pm_extra_tools-1.6/pm_extra_tools-1.6-1.el9.noarch.rpm
