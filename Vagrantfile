@@ -21,6 +21,9 @@ Vagrant.configure("2") do |config|
         node.vm.provision "ansible" do |ansible|
           ansible.limit = "all"
           ansible.playbook = "setup.yml"
+          ansible.extra_vars = {
+            postgresql_version: "17"
+          }
         end
       end
     end
