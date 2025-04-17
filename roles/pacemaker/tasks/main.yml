@@ -53,5 +53,3 @@
     name: systemd-logind
     state: restarted
   when: _logind_conf.changed
-
--
