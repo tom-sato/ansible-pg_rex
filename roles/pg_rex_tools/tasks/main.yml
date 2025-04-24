@@ -66,8 +66,6 @@
         {%- endfor -%}
     - - Archive_dir
       - "{{ postgresql_archive_directory }}"
-    - - IPADDR_STANDBY
-      - disable
     - - PGPATH
       - /usr/pgsql-{{ postgresql_version }}/bin
     - - PEER_NODE_SSH_PASS_MODE
