@@ -40,3 +40,24 @@
       {% for item in groups.all %}
       {{ hostvars[item]['ansible_' + s_lan_interface].ipv4.address }} {{ hostvars[item].ansible_fqdn }} {{ item }}
       {% endfor %}
+- name: Checking if Partition Has Free Space
+  command:
+    cmd: parted -s {{ root_device | regex_replace('\d+$') }} unit % print free
+  register: _parted
+  changed_when: false
+- block:
+    - name: Installing growpart
+      yum:
+        name: cloud-utils-growpart
+    - name: Extending Partition
+      command:
+        cmd: growpart {{ root_device | regex_replace('(\d+)$', ' \1') }}
+      register: _growpart
+      changed_when: _growpart.stdout is search('CHANGED')
+      failed_when: _growpart.rc != 0 and _growpart.stdout is not search('NOCHANGE')
+  when: _parted.stdout_lines[-1] is search('Free Space') and _parted.stdout_lines[-1] is not search('0.00%')
+- name: Extending Filesystem
+  command:
+    cmd: xfs_growfs /
+  register: _xfs_growfs
+  changed_when: _xfs_growfs.stdout is search('data blocks changed')

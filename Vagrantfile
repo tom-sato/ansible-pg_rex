@@ -17,6 +17,11 @@ Vagrant.configure("2") do |config|
         #vb.cpus = 1
         vb.customize ["modifyvm", :id, "--firmware", "efi"]
       end
+      # On WSL, the disksize plugin requires a patch to work.
+      # See: https://github.com/sprotheroe/vagrant-disksize/issues/20
+      if defined?(disk) && Vagrant.has_plugin?("vagrant-disksize")
+        #node.disksize.size = "10GB"
+      end
       if item.equal?(nodes.last)
         node.vm.provision "ansible" do |ansible|
           ansible.limit = "all"

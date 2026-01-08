@@ -7,6 +7,12 @@ ic_lan_interfaces:
 a_lan_interface: eth5
 system_locale: ja_JP.UTF-8
 system_timezone: Asia/Tokyo
+root_device: >-
+  {%- if ansible_distribution_major_version is version('8', '==') -%}
+  /dev/sda4
+  {%- elif ansible_distribution_major_version is version('9', '==') -%}
+  /dev/sda5
+  {%- endif -%}
 pacemaker_password: hapasswd
 pacemaker_cluster_name: pgrex_cluster
 postgresql_version: 17
