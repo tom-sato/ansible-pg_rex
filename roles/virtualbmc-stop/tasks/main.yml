@@ -37,7 +37,7 @@
   changed_when: false
 - name: Removing IP Address
   command:
-    cmd: ip addr del {{ item.value }}/{{ '%s/%s' | format(ansible_facts.default_ipv4.network, ansible_facts.default_ipv4.netmask) | ipaddr('prefix') }} dev {{ ansible_facts.default_ipv4.interface }}
+    cmd: ip addr del {{ item.value }}/{{ '%s/%s' | format(ansible_facts.default_ipv4.network, ansible_facts.default_ipv4.netmask) | ansible.utils.ipaddr('prefix') }} dev {{ ansible_facts.default_ipv4.interface }}
   become: true
   when: _ip.stdout is search(item.value)
   loop: "{{ ipmi_addresses | dict2items }}"

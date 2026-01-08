@@ -155,7 +155,7 @@
       blockinfile:
         path: "{{ postgresql_data_directory }}/pg_hba.conf"
         block: |
-          host    all             all             {{ '%s/%s' | format(ansible_facts[s_lan_interface].ipv4.network, ansible_facts[s_lan_interface].ipv4.netmask) | ipaddr('network/prefix') }}         scram-sha-256
+          host    all             all             {{ '%s/%s' | format(ansible_facts[s_lan_interface].ipv4.network, ansible_facts[s_lan_interface].ipv4.netmask) | ansible.utils.ipaddr('network/prefix') }}         scram-sha-256
           {% for item in groups.all %}
           host    replication     {{ postgresql_replication_user }}         {{ hostvars[item]['ansible_' + d_lan_interface].ipv4.address }}/32       scram-sha-256
           {% endfor %}
