@@ -13,8 +13,8 @@ Vagrant.configure("2") do |config|
       node.vm.network "private_network", ip: "192.168.60.#{101 + i}", virtualbox__intnet: "a_lan"
       node.vm.synced_folder ".", "/vagrant", disabled: true
       node.vm.provider "virtualbox" do |vb|
-        vb.memory = 1024
-        vb.cpus = 1
+        #vb.memory = 1024
+        #vb.cpus = 1
         vb.customize ["modifyvm", :id, "--firmware", "efi"]
       end
       if item.equal?(nodes.last)
