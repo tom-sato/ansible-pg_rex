@@ -15,7 +15,7 @@ The playbook is tested with the following software versions:
 * Vagrant box
   * [rockylinux/8](https://app.vagrantup.com/rockylinux/boxes/8)
   * [rockylinux/9](https://app.vagrantup.com/rockylinux/boxes/9)
-* Ansible 2.10.x
+* Ansible 2.16.x
 * PG-REX 12 - 17
   * PostgreSQL 12.x - 17.x
   * Pacemaker 2.1.x
