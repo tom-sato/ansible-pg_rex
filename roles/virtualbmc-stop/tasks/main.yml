@@ -7,28 +7,15 @@
   failed_when: false
 - block:
     - name: Gathering Virtual Machine Information
-      shell:
-        cmd: /mnt/c/Program\ Files/Oracle/VirtualBox/VBoxManage.exe showvminfo $(cat ./.vagrant/machines/{{ item.key }}/virtualbox/id) --machinereadable | grep -E ^name= | cut -d \" -f 2
-      loop: "{{ ipmi_addresses | dict2items }}"
-      register: _vboxmanage
-      changed_when: false
-    - name: Checking if VirtualBMC is Running
       command:
-        cmd: ./venv/bin/vbmc list -f value
+        cmd: ./venv/bin/vbmc list -f value -c "Domain name"
       register: _vbmc
       changed_when: false
-    - name: Stopping VirtualBMC
-      command:
-        cmd: ./venv/bin/vbmc stop {{ item.stdout }}
-      become: true
-      when: _vbmc.stdout is search(item.stdout + ' running')
-      loop: "{{ _vboxmanage.results }}"
     - name: Removing VirtualBMC
       command:
-        cmd: ./venv/bin/vbmc delete {{ item.stdout }}
+        cmd: ./venv/bin/vbmc delete {{ item }}
       become: true
-      when: _vbmc.stdout is search(item.stdout)
-      loop: "{{ _vboxmanage.results }}"
+      loop: "{{ _vbmc.stdout_lines }}"
   when: _pgrep.rc == 0
 - name: Checking if IP Address is Added
   command:
