@@ -3,7 +3,7 @@ Vagrant.configure("2") do |config|
   nodes = ["node-1", "node-2"]
   nodes.each_with_index do |item, i|
     config.vm.define item do |node|
-      node.vm.box = "rockylinux/9"
+      node.vm.box = "bento/rockylinux-10"
       node.vm.box_check_update = false
       node.vm.hostname = item
       node.vm.network "private_network", ip: "192.168.56.#{101 + i}" # s_lan
@@ -15,7 +15,10 @@ Vagrant.configure("2") do |config|
       node.vm.provider "virtualbox" do |vb|
         #vb.memory = 1024
         #vb.cpus = 1
-        vb.customize ["modifyvm", :id, "--firmware", "efi"]
+        vb.customize ["modifyvm", :id, "--ioapic", "on"]
+        if node.vm.box =~ %r{-(\d+)(?:\.\d+)?$} && Regexp.last_match(1).to_i >= 10
+          vb.customize ["modifyvm", :id, "--firmware", "efi"]
+        end
       end
       # On WSL, the disksize plugin requires a patch to work.
       # See: https://github.com/sprotheroe/vagrant-disksize/issues/20
@@ -27,7 +30,7 @@ Vagrant.configure("2") do |config|
           ansible.limit = "all"
           ansible.playbook = "setup.yml"
           ansible.extra_vars = {
-            postgresql_version: "17"
+            postgresql_version: "18"
           }
         end
       end

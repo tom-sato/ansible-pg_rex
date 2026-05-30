@@ -13,14 +13,15 @@ The playbook is tested with the following software versions:
 * VirtualBox 7.1.x
 * Vagrant 2.4.x
 * Vagrant box
-  * [rockylinux/8](https://app.vagrantup.com/rockylinux/boxes/8)
-  * [rockylinux/9](https://app.vagrantup.com/rockylinux/boxes/9)
+  * [bento/rockylinux-8](https://app.vagrantup.com/bento/boxes/rockylinux-8)
+  * [bento/rockylinux-9](https://app.vagrantup.com/bento/boxes/rockylinux-9)
+  * [bento/rockylinux-10](https://app.vagrantup.com/bento/boxes/rockylinux-10)
 * Ansible 2.16.x
-* PG-REX 12 - 17
-  * PostgreSQL 12.x - 17.x
-  * Pacemaker 2.1.x
-  * Pacemaker Extra Tools ([pm\_extra\_tools](https://github.com/linux-ha-japan/pm_extra_tools)) 1.6
-  * PG-REX Operation Tools ([PG-REX-tools](https://github.com/ossc-db/PG-REX-tools)) 15.1 on EL8, 17.0 on EL9
+* PG-REX 14 - 18
+  * PostgreSQL 14.x - 18.x
+  * Pacemaker 2.1.x, 3.0.x
+  * Pacemaker Extra Tools ([pm\_extra\_tools](https://github.com/linux-ha-japan/pm_extra_tools)) 1.8.1
+  * PG-REX Operation Tools ([PG-REX-tools](https://github.com/ossc-db/PG-REX-tools)) 15.1 on EL8, 17.0 on EL9, 18.0 on EL10
 * VirtualBMC VirtualBox-ported edition ([virtualbmc-vbox](https://github.com/kskmori/virtualbmc-vbox)) devel2.0
 
 Usage
@@ -34,8 +35,8 @@ $ cd ansible-pg_rex
 $ vagrant up --provision
 (snip)
 PLAY RECAP *********************************************************************
-node-1                     : ok=61   changed=46   unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-node-2                     : ok=37   changed=27   unreachable=0    failed=0    skipped=16   rescued=0    ignored=0
+node-1                     : ok=76   changed=44   unreachable=0    failed=0    skipped=6    rescued=0    ignored=0
+node-2                     : ok=49   changed=30   unreachable=0    failed=0    skipped=23   rescued=0    ignored=0
 
 $ ansible-playbook virtualbmc-start.yml
 Using /home/tom-sato/work/ansible-pg_rex/ansible.cfg as config file
@@ -65,9 +66,9 @@ $ sudo pcs status
 Cluster name: pgrex_cluster
 Cluster Summary:
   * Stack: corosync (Pacemaker is running)
-  * Current DC: node-1 (version 2.1.8-3.el9-3980678f0) - partition with quorum
-  * Last updated: Sun Feb 23 00:41:41 2025 on node-2
-  * Last change:  Sun Feb 23 00:41:02 2025 by root via root on node-1
+  * Current DC: node-1 (version 3.0.1-5.el10-833ec3a) - partition with quorum
+  * Last updated: Sat May 30 12:35:26 2026 on node-2
+  * Last change:  Sat May 30 12:34:59 2026 by root via root on node-1
   * 2 nodes configured
   * 11 resource instances configured
 
@@ -133,8 +134,8 @@ The following variables are available in the `./group_vars/all.yml` file:
 * `ipmi_addresses` - Specifies a hash of the IP address for IPMI connection keyed by the hostname. The default is `{node-1: 172.23.135.101, node-2: 172.23.135.102}`.
 * `ipmi_user` - Specifies the username for IPMI connection. The default is `Administrator`.
 * `ipmi_password` - Specifies the password for the IPMI user. The default is `adminpasswd`.
-* `pm_extra_tools_download_urls`- Specifies a hash of the Pacemaker Extra Tools download URL keyed by the major version of the distribution.
-* `pg_rex_tools_download_urls`- Specifies a hash of the PG-REX Operation Tools download URL keyed by the major version of the distribution.
+* `pm_extra_tools_download_url`- Specifies the Pacemaker Extra Tools download URL.
+* `pg_rex_tools_download_url`- Specifies the PG-REX Operation Tools download URL.
 
 License
 -------

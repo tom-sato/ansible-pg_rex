@@ -13,7 +13,7 @@
             state: directory
         - name: Unpacking Archive
           unarchive:
-            src: "{{ pg_rex_tools_download_urls[ansible_distribution_major_version] }}"
+            src: "{{ pg_rex_tools_download_url }}"
             dest: "{{ ansible_env.PWD }}/pg-rex"
             remote_src: true
       when: _find.matched == 0
@@ -26,20 +26,35 @@
     - name: Installing PG-REX Operation Tools
       yum:
         name: "{{ items | flatten(1) | select() }}"
+        enablerepo: "{{ ansible_distribution_major_version is version('10', '>=') | ternary('crb', '') }}"
         disable_gpg_check: true
       vars:
         items:
           - "{{ _find.files | json_query('[*].path') }}"
           - lsof
           - "{{ ansible_distribution_major_version is version('9', '>=') | ternary('perl-File-Compare', '') }}"
+          - "{{ ansible_distribution_major_version is version('10', '==') | ternary('https://github.com/ossc-db/PG-REX-tools/releases/download/PG-REX_18_1/Net_OpenSSH-0.62-1.el10.x86_64.rpm', '') }}"
   when: "'pg-rex_operation_tools_script' not in ansible_facts.packages"
 - name: Removing Destination Directory
   file:
     path: ./pg-rex
     state: absent
+- name: Finding PGRex Perl Module Directory
+  find:
+    paths: /usr/local/share/perl5
+    patterns: PGRex
+    recurse: true
+    file_type: directory
+  register: _find_pgrex
+- name: Fixing Syntax Error
+  lineinfile:
+    path: "{{ _find_pgrex.files | map(attribute='path') | first }}/Po/en.pm"
+    regexp: ^(package PGRex::Po::en)$
+    line: \1;
+    backrefs: true
 - name: Fixing to Skip PostgreSQL Version Check
   lineinfile:
-    path: /usr/local/share/perl5/{{ ansible_distribution_major_version is version('9', '>=') | ternary('5.32/', '') }}PGRex/common.pm
+    path: "{{ _find_pgrex.files | map(attribute='path') | first }}/common.pm"
     regexp: ^(\s+)(if \(int\(\$version_num / 10000\) != \d+)(\){)$
     line: \1#\2\3\n\1\2 && 0\3
     backrefs: true
@@ -49,6 +64,12 @@
     regexp: ^(\s+)(.+)(--no-manifest )(.+)$
     replace: \1#\2\3\4\n\1\2\4
   when: postgresql_version is version('12', '<=')
+- name: Fixing to Exclude Summaries Directory
+  replace:
+    path: /usr/local/bin/pg-rex_standby_start
+    regexp: ^(\s+if \(grep { .+ && \$_ ne 'archive_status') (} readdir \$dir\) {)$
+    replace: \1 && $_ ne 'summaries' \2
+  when: postgresql_version is version('17', '>=')
 - name: Editing Config File
   lineinfile:
     path: /etc/pg-rex_tools.conf
@@ -76,7 +97,7 @@
       - "{{ pacemaker_cluster_name }}"
 - name: Gathering SSH Host Key
   command:
-    cmd: ssh-keyscan {{ hostvars[item]['ansible_' + d_lan_interface].ipv4.address }}
+    cmd: ssh-keyscan -t ed25519 {{ hostvars[item]['ansible_' + d_lan_interface].ipv4.address }}
   loop: "{{ groups.all | difference([ansible_hostname]) }}"
   register: _ssh_keygen
   changed_when: false
@@ -87,8 +108,8 @@
 - name: Adding SSH Host Key to Known Hosts File
   known_hosts:
     path: /root/.ssh/known_hosts
-    name: "{{ item.cmd.1 }}"
-    key: "{{ item.stdout }}"
+    name: "{{ item.cmd.3 }}"
+    key: "{{ item.stdout_lines[-1] }}"
   loop: "{{ _ssh_keygen.results }}"
 - name: Creating SSH Key Pair
   openssh_keypair:

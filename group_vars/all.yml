@@ -1,21 +1,16 @@
 ---
-s_lan_interface: eth1
-d_lan_interface: eth2
+s_lan_interface: enp0s8
+d_lan_interface: enp0s9
 ic_lan_interfaces:
-  - eth3
-  - eth4
-a_lan_interface: eth5
+  - enp0s10
+  - enp0s16
+a_lan_interface: enp0s17
 system_locale: ja_JP.UTF-8
 system_timezone: Asia/Tokyo
-root_device: >-
-  {%- if ansible_distribution_major_version is version('8', '==') -%}
-  /dev/sda4
-  {%- elif ansible_distribution_major_version is version('9', '==') -%}
-  /dev/sda5
-  {%- endif -%}
+root_device: "{{ ansible_distribution_major_version is version('9', '<=') | ternary('/dev/sda2', '/dev/sda3') }}"
 pacemaker_password: hapasswd
 pacemaker_cluster_name: pgrex_cluster
-postgresql_version: 17
+postgresql_version: 18
 postgresql_password: pgpasswd
 postgresql_data_directory: /dbfp/pgdata/data
 postgresql_wal_directory: /dbfp/pgwal/pg_wal
@@ -34,9 +29,12 @@ ipmi_addresses:
   node-2: 172.23.135.102
 ipmi_user: Administrator
 ipmi_password: adminpasswd
-pm_extra_tools_download_urls:
-  '8': https://github.com/linux-ha-japan/pm_extra_tools/releases/download/pm_extra_tools-1.6/pm_extra_tools-1.6-1.el8.noarch.rpm
-  '9': https://github.com/linux-ha-japan/pm_extra_tools/releases/download/pm_extra_tools-1.6/pm_extra_tools-1.6-1.el9.noarch.rpm
-pg_rex_tools_download_urls: 
-  '8': https://github.com/ossc-db/PG-REX-tools/releases/download/PG-REX_15_5/pg-rex15-5.0-1.tar.gz
-  '9': https://github.com/ossc-db/PG-REX-tools/releases/download/PG-REX_17_1/pg-rex17-1.0-1.tar.gz
+pm_extra_tools_download_url: https://github.com/linux-ha-japan/pm_extra_tools/releases/download/pm_extra_tools-1.8/pm_extra_tools-1.8-1.el{{ ansible_distribution_major_version }}.noarch.rpm
+pg_rex_tools_download_url: >-
+  {%- if ansible_distribution_major_version is version('8', '==') -%}
+  https://github.com/ossc-db/PG-REX-tools/releases/download/PG-REX_15_5/pg-rex15-5.0-1.tar.gz
+  {%- elif ansible_distribution_major_version is version('9', '==') -%}
+  https://github.com/ossc-db/PG-REX-tools/releases/download/PG-REX_17_1/pg-rex17-1.0-1.tar.gz
+  {%- elif ansible_distribution_major_version is version('10', '==') -%}
+  https://github.com/ossc-db/PG-REX-tools/releases/download/PG-REX_18_1/pg-rex18-1.0-1.tar.gz
+  {%- endif -%}

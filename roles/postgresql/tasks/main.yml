@@ -5,16 +5,18 @@
 - name: Installing Yum Repository
   yum:
     name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-{{ ansible_distribution_major_version }}-{{ ansible_architecture }}/pgdg-redhat-repo-latest.noarch.rpm
-- name: Checking if PostgreSQL Module is Enabled
-  command:
-    cmd: dnf -y module list --disabled postgresql
-  register: _dnf
-  changed_when: false
-  failed_when: false
-- name: Disabling PostgreSQL Module
-  command:
-    cmd: dnf -y module disable postgresql
-  when: _dnf.rc != 0
+- block:
+    - name: Checking if PostgreSQL Module is Enabled
+      command:
+        cmd: dnf -y module list --disabled postgresql
+      register: _dnf
+      changed_when: false
+      failed_when: false
+    - name: Disabling PostgreSQL Module
+      command:
+        cmd: dnf -y module disable postgresql
+      when: _dnf.rc != 0
+  when: ansible_distribution_major_version is version('8', '==')
 - name: Installing PostgreSQL
   yum:
     name:
@@ -23,16 +25,24 @@
       - postgresql{{ postgresql_version }}-server
       - postgresql{{ postgresql_version }}-contrib
       - postgresql{{ postgresql_version }}-docs
-- name: Checking if Password for postgres User is Set
-  command:
-    cmd: passwd -S postgres
-  register: _passwd
-  changed_when: false
+- name: Gathering Service Facts
+  service_facts:
+- name: Opening Pacemaker Ports
+  firewalld:
+    port: 5432/tcp
+    state: enabled
+    permanent: true
+    immediate: "{{ ansible_facts.services['firewalld.service'].state == 'running' }}"
+  when: "'firewalld.service' in ansible_facts.services"
+- name: Getting Shadow Entry
+  getent:
+    database: shadow
+    key: postgres
 - name: Setting Password for postgres User
   user:
     name: postgres
     password: "{{ postgresql_password | password_hash('sha512') }}"
-  when: _passwd.stdout is not search('PS')
+  when: getent_shadow.postgres.0 in ['!', '*', '!!']
 - name: Setting Environment Variables in Bash Profile File
   blockinfile:
     path: /var/lib/pgsql/.bash_profile

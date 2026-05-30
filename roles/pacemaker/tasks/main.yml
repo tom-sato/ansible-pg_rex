@@ -6,41 +6,93 @@
       - pacemaker
       - fence-agents-all
     enablerepo: "{{ ansible_distribution_major_version is version('9', '>=') | ternary('highavailability', 'ha') }}"
+- name: Gathering Service Facts
+  service_facts:
+- name: Opening Pacemaker Ports
+  firewalld:
+    port: "{{ item }}"
+    state: enabled
+    permanent: true
+    immediate: "{{ ansible_facts.services['firewalld.service'].state == 'running' }}"
+  loop:
+    - 2224/tcp
+    - 5404/udp
+    - 5405/udp
+  when: "'firewalld.service' in ansible_facts.services"
 - name: Starting pcsd Service
   service:
     name: pcsd
     state: started
     enabled: true
-- name: Checking if Password for hacluster User is Set
-  command:
-    cmd: passwd -S hacluster
-  register: _passwd
-  changed_when: false
+- name: Getting Shadow Entry
+  getent:
+    database: shadow
+    key: hacluster
 - name: Setting Password for hacluster User
   user:
     name: hacluster
     password: "{{ pacemaker_password | password_hash('sha512') }}"
-  when: _passwd.stdout is not search('PS')
+  when: getent_shadow.hacluster.0 in ['!', '*', '!!']
 - block:
     - name: Checking if hacluster User is Authenticated
       stat:
         path: /var/lib/pcsd/known-hosts
       register: _known_hosts
-    - name: Authenticating hacluster User
-      command:
-        cmd: >
-          pcs host auth
-          {% for item in groups.all %}
-          {{ hostvars[item].ansible_fqdn }} addr={{ hostvars[item]['ansible_' + a_lan_interface].ipv4.address }}
-          {% endfor %}
-          -u hacluster -p {{ pacemaker_password }}
-      when: not _known_hosts.stat.exists
+    - block:
+        - name: Authenticating hacluster User
+          command:
+            cmd: >
+              pcs host auth
+              {% for item in groups.all %}
+              {{ hostvars[item].ansible_fqdn }} addr={{ hostvars[item]['ansible_' + a_lan_interface].ipv4.address }}
+              {% endfor %}
+              -u hacluster -p {{ pacemaker_password }}
+          when: not _known_hosts.stat.exists
+      rescue:
+        - name: Removing Incomplete Known-Hosts File
+          file:
+            path: /var/lib/pcsd/known-hosts
+            state: absent
+        - name: Aborting Pacemaker Setup
+          fail:
+    - block:
+        - name: Checking if Corosync Config File Exists
+          stat:
+            path: /etc/corosync/corosync.conf
+          register: _corosync_conf
+        - name: Setting up Pacemaker Cluster
+          command:
+            cmd: >
+              pcs cluster setup {{ pacemaker_cluster_name  }}
+              {% for item in groups.all %}
+              {{ hostvars[item].ansible_fqdn }}
+              {% for subitem in ic_lan_interfaces %}
+              addr={{ hostvars[item]['ansible_' + subitem].ipv4.address }}
+              {% endfor %}
+              {% endfor %}
+          when: not _corosync_conf.stat.exists
+      when: ansible_distribution_major_version is version('10', '>=')
   run_once: true
 - name: Enabling Trigger Panic on Failure
   lineinfile:
     path: /etc/sysconfig/pacemaker
-    insertafter: '^# Default: PCMK_fail_fast="no"'
-    line: PCMK_fail_fast=yes
+    insertafter: "^# Default: {{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
+  loop: "{{ params | dict2items }}"
+  vars:
+    params:
+      PCMK_fail_fast: 'yes'
+      PCMK_panic_action: sync-reboot
+- name: Checking if Logind Config File Exists
+  stat:
+    path: /etc/systemd/logind.conf
+  register: _logind_conf_stat
+- name: Copying Logind Config File
+  copy:
+    src: /usr/lib/systemd/logind.conf
+    dest: /etc/systemd/logind.conf
+    remote_src: true
+  when: not _logind_conf_stat.stat.exists
 - name: Disabling ACPI Soft-Off
   lineinfile:
     path: /etc/systemd/logind.conf

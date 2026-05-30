@@ -58,6 +58,7 @@
 ,,,,clone-node-max,,,1,,,,,,,
 ,,,,notify,,,true,,,,,,,
 ,,,,priority,,,1,,,,,,,
+,,storage-mon-clone,,allow-unhealthy-nodes,,,true,,,,,,,
 ,,,,,,,,,,,,,,
 #表 6-1 クラスタ設定　…　STONITHの実行順序,,,,,,,,,,,,,,
 ,STONITH_LEVEL,,,,,,,,,,,,,
@@ -93,6 +94,9 @@
 ,,options,ip,,{{ postgresql_replication_address }},,,,,レプリケーション接続用仮想IPアドレス,,,,
 ,,,nic,,{{ d_lan_interface }},,,,,同デバイス名,,,,
 ,,,cidr_netmask,,{{ _d_lan_prefix }},,,,,同ネットマスク,,,,
+{% if ansible_distribution_major_version is version('9', '>=') %}
+,,,check_link_status,,false,,,,,DOWN/LOWERLAYERDOWNエラー検知を無効化,,,,
+{% endif %}
 ,,meta,migration-threshold,,0,,,,,,,,,
 ,O,type,timeout,,interval,,on-fail,,role,,start-delay,,,
 #,,オペレーション,タイムアウト値,,監視間隔,,障害時の動作,,役割,,起動前待機時間,備考,,
@@ -176,7 +180,9 @@
 ,,options,drives,,{{ monitored_devices | join(' ') }},,,,,検査対象とするディスクのデバイス名を空白文字で区切って列挙する,,,,
 ,,,io_timeout,,10,,,,,"ディスク故障発生とみなすディスクI/Oのタイムアウト時間を設定する
 デフォルト値は10(単位秒)",,,,
-,,,,,,,,,,,,,,
+{% if ansible_distribution_major_version is version('9', '>=') %}
+,,,daemonize,,true,,,,,daemonモードで実行する,,,,
+{% endif %}
 ,O,type,timeout,,interval,,on-fail,,role,,start-delay,,,
 #,,オペレーション,タイムアウト値,,監視間隔,,障害時の動作,,役割,,起動前待機時間,備考,,
 ,,start,120s,,,,restart,,,,,timeout: デフォルトの10sでは短い（io_timeoutより大きくない）ため、monitor/stopと合わせる,,

@@ -1,20 +1,34 @@
 ---
 - name: Installing Pacemaker Extra Tools
   yum:
-    name: "{{ pm_extra_tools_download_urls[ansible_distribution_major_version] }}"
+    name: "{{ pm_extra_tools_download_url }}"
     disable_gpg_check: true
 - block:
     - name: Getting CIDR Prefixes
       set_fact:
         _s_lan_prefix: "{{ '%s/%s' | format(ansible_facts[s_lan_interface].ipv4.network, ansible_facts[s_lan_interface].ipv4.netmask) | ansible.utils.ipaddr('prefix') }}"
         _d_lan_prefix: "{{ '%s/%s' | format(ansible_facts[d_lan_interface].ipv4.network, ansible_facts[d_lan_interface].ipv4.netmask) | ansible.utils.ipaddr('prefix') }}"
-    - name: Templating Resource Definition File
+    - name: Templating Resource Definition CSV File
       template:
         src: ./pm_pcsgen_env.csv.j2
         dest: ./pm_pcsgen_env.csv
       register: _pm_pcsgen_env
-    - name: Converting Resource Definition File to XML
-      command:
-        cmd: pm_pcsgen ./pm_pcsgen_env.csv
-      when: _pm_pcsgen_env.changed
+    - name: Checking if Resource Definition XML File Exists
+      stat:
+        path: ./pm_pcsgen_env.xml
+      register: _pm_pcsgen_env_xml
+    - block:
+        - name: Converting Resource Definition CSV File to XML
+          command:
+            cmd: pm_pcsgen ./pm_pcsgen_env.csv
+          register: _pm_pcsgen
+          failed_when: _pm_pcsgen.rc not in [0, 2]
+          when: _pm_pcsgen_env.changed or not _pm_pcsgen_env_xml.stat.exists
+      rescue:
+        - name: Removing Incomplete Resource Definition XML File
+          file:
+            path: ./pm_pcsgen_env.xml
+            state: absent
+        - name: Aborting Resource Definition XML File Generation
+          fail:
   when: ansible_hostname == groups.all.0
