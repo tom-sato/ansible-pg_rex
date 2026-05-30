@@ -1,6 +1,6 @@
 ---
 - block:
-    - name: Checking out Git Repository
+    - name: Cloning VirtualBMC Repository
       git:
         repo: https://github.com/kskmori/virtualbmc-vbox.git
         dest: ./repo
@@ -23,11 +23,11 @@
           pip3 install -e ./repo
         creates: ./venv/bin/vbmcd
         executable: /bin/bash
-    - name: Creating Config Directory
+    - name: Creating VirtualBMC Config Directory
       file:
         path: ./vbmc
         state: directory
-    - name: Creating Config File
+    - name: Creating VirtualBMC Config File
       blockinfile:
         path: ./vbmc/vbmc.conf
         block: |

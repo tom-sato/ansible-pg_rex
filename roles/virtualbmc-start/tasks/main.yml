@@ -1,5 +1,5 @@
 ---
-- name: Checking if VirtualBMC Server is Running
+- name: Gathering VirtualBMC Server Status
   command:
     cmd: pgrep -f ./venv/bin/vbmcd
   register: _pgrep
@@ -13,12 +13,12 @@
   environment:
     VIRTUALBMC_CONFIG: ./vbmc/vbmc.conf
   when: _pgrep.rc != 0
-- name: Checking if Address is Added
+- name: Gathering IP Address Status
   command:
     cmd: ip addr
   register: _ip
   changed_when: false
-- name: Adding Address
+- name: Adding IP Addresses
   command:
     cmd: ip addr add {{ item.value }}/{{ '%s/%s' | format(ansible_facts.default_ipv4.network, ansible_facts.default_ipv4.netmask) | ansible.utils.ipaddr('prefix') }} dev {{ ansible_facts.default_ipv4.interface }}
   become: true
@@ -30,18 +30,18 @@
   loop: "{{ ipmi_addresses | dict2items }}"
   register: _vboxmanage
   changed_when: false
-- name: Checking if VirtualBMC is Running
+- name: Gathering VirtualBMC Instance Status
   command:
     cmd: ./venv/bin/vbmc list -f value
   register: _vbmc
   changed_when: false
-- name: Adding VirtualBMC
+- name: Adding VirtualBMC Instances
   command:
     cmd: ./venv/bin/vbmc add --username={{ ipmi_user }} --password={{ ipmi_password }} --address={{ item.item.value }} {{ item.stdout }}
   become: true
   when: _vbmc.stdout is not search(item.stdout)
   loop: "{{ _vboxmanage.results }}"
-- name: Starting VirtualBMC
+- name: Starting VirtualBMC Instances
   command:
     cmd: ./venv/bin/vbmc start {{ item.stdout }}
   become: true

@@ -1,8 +1,8 @@
 ---
-- name: Checking if Package is Installed
+- name: Gathering Package Facts
   package_facts:
 - block:
-    - name: Checking if Archive is Unpacked
+    - name: Gathering Archive Status
       find:
         paths: ./pg-rex
       register: _find
@@ -17,7 +17,7 @@
             dest: "{{ ansible_env.PWD }}/pg-rex"
             remote_src: true
       when: _find.matched == 0
-    - name: Finding Packages
+    - name: Finding PG-REX Operation Tools Packages
       find:
         paths: ./pg-rex
         patterns: "{{ '*.el%s.*.rpm' | format(ansible_distribution_major_version) }}"
@@ -46,31 +46,31 @@
     recurse: true
     file_type: directory
   register: _find_pgrex
-- name: Fixing Syntax Error
+- name: Fixing PGRex English Message Module Syntax
   lineinfile:
     path: "{{ _find_pgrex.files | map(attribute='path') | first }}/Po/en.pm"
     regexp: ^(package PGRex::Po::en)$
     line: \1;
     backrefs: true
-- name: Fixing to Skip PostgreSQL Version Check
+- name: Disabling PostgreSQL Version Check in PGRex
   lineinfile:
     path: "{{ _find_pgrex.files | map(attribute='path') | first }}/common.pm"
     regexp: ^(\s+)(if \(int\(\$version_num / 10000\) != \d+)(\){)$
     line: \1#\2\3\n\1\2 && 0\3
     backrefs: true
-- name: Fixing to Remove --no-manifest from pg_basebackup
+- name: Removing --no-manifest from pg_basebackup Command
   replace:
     path: /usr/local/bin/pg-rex_standby_start
     regexp: ^(\s+)(.+)(--no-manifest )(.+)$
     replace: \1#\2\3\4\n\1\2\4
   when: postgresql_version is version('12', '<=')
-- name: Fixing to Exclude Summaries Directory
+- name: Excluding Summaries Directory from Archive Check
   replace:
     path: /usr/local/bin/pg-rex_standby_start
     regexp: ^(\s+if \(grep { .+ && \$_ ne 'archive_status') (} readdir \$dir\) {)$
     replace: \1 && $_ ne 'summaries' \2
   when: postgresql_version is version('17', '>=')
-- name: Editing Config File
+- name: Configuring PG-REX Operation Tools
   lineinfile:
     path: /etc/pg-rex_tools.conf
     regex: ^({{ item.0 }}) = (?:[^ ,]+(?:\s*,\s*[^ ,]+)*)?(\s+#.*)$
@@ -95,7 +95,7 @@
       - nopass
     - - HACLUSTER_NAME
       - "{{ pacemaker_cluster_name }}"
-- name: Gathering SSH Host Key
+- name: Gathering SSH Host Keys
   command:
     cmd: ssh-keyscan -t ed25519 {{ hostvars[item]['ansible_' + d_lan_interface].ipv4.address }}
   loop: "{{ groups.all | difference([ansible_hostname]) }}"
@@ -105,7 +105,7 @@
   file:
     path: /root/.ssh
     state: directory
-- name: Adding SSH Host Key to Known Hosts File
+- name: Adding SSH Host Keys to Known Hosts File
   known_hosts:
     path: /root/.ssh/known_hosts
     name: "{{ item.cmd.3 }}"

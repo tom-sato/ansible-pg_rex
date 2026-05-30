@@ -1,12 +1,12 @@
 ---
-- name: Installing RPM GPG Key
+- name: Installing PostgreSQL RPM GPG Key
   rpm_key:
     key: https://download.postgresql.org/pub/repos/yum/keys/PGDG-RPM-GPG-KEY-RHEL
-- name: Installing Yum Repository
+- name: Installing PostgreSQL Yum Repository
   yum:
     name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-{{ ansible_distribution_major_version }}-{{ ansible_architecture }}/pgdg-redhat-repo-latest.noarch.rpm
 - block:
-    - name: Checking if PostgreSQL Module is Enabled
+    - name: Gathering PostgreSQL Module Status
       command:
         cmd: dnf -y module list --disabled postgresql
       register: _dnf
@@ -27,14 +27,14 @@
       - postgresql{{ postgresql_version }}-docs
 - name: Gathering Service Facts
   service_facts:
-- name: Opening Pacemaker Ports
+- name: Opening Firewall Port for PostgreSQL
   firewalld:
     port: 5432/tcp
     state: enabled
     permanent: true
     immediate: "{{ ansible_facts.services['firewalld.service'].state == 'running' }}"
   when: "'firewalld.service' in ansible_facts.services"
-- name: Getting Shadow Entry
+- name: Gathering postgres Shadow Entry
   getent:
     database: shadow
     key: postgres
@@ -43,7 +43,7 @@
     name: postgres
     password: "{{ postgresql_password | password_hash('sha512') }}"
   when: getent_shadow.postgres.0 in ['!', '*', '!!']
-- name: Setting Environment Variables in Bash Profile File
+- name: Configuring Bash Profile
   blockinfile:
     path: /var/lib/pgsql/.bash_profile
     block: |
@@ -51,7 +51,7 @@
       export PGDATA={{ postgresql_data_directory }}
     owner: postgres
     group: postgres
-- name: Creating Data and Other Directories
+- name: Creating PostgreSQL Directories
   file:
     path: "{{ item }}"
     state: directory
@@ -63,7 +63,7 @@
     - "{{ postgresql_wal_directory }}"
     - "{{ postgresql_archive_directory }}"
 - block:
-    - name: Checking if Database Cluster Exists
+    - name: Gathering Database Cluster Status
       stat:
         path: "{{ postgresql_data_directory }}/PG_VERSION"
       register: _pg_version
@@ -90,7 +90,7 @@
                 path: "{{ _tempfile.path }}"
                 state: absent
       when: not _pg_version.stat.exists
-    - name: Editing Config File
+    - name: Configuring PostgreSQL Settings
       lineinfile:
         path: "{{ postgresql_data_directory }}/postgresql.conf"
         regexp: ^#?({{ item.0 }}) = (?:'(?:[^']|'')*'|[^ ]+)(\s+#.*)?$
@@ -133,7 +133,7 @@
           - 20s
         - - restart_after_crash
           - "off"
-    - name: Checking if Repuser Exists Signal File Exists
+    - name: Gathering Replication User Signal Status
       stat:
         path: "{{ postgresql_data_directory }}/.repuser_exists.signal"
       register: _repuser_exists_signal
@@ -142,7 +142,7 @@
           command:
             cmd: /usr/pgsql-{{ postgresql_version }}/bin/pg_ctl start -D {{ postgresql_data_directory }}
             creates: "{{ postgresql_data_directory }}/postmaster.pid"
-        - name: Checking if Replication User Exists
+        - name: Gathering Replication User Status
           command:
             cmd: /usr/pgsql-{{ postgresql_version }}/bin/psql -c "SELECT 'repuser_exists' WHERE EXISTS (SELECT * FROM pg_roles WHERE rolname = '{{ postgresql_replication_user }}')" -p {{ postgresql_port }}
           register: _psql
@@ -155,13 +155,13 @@
           command:
             cmd: /usr/pgsql-{{ postgresql_version }}/bin/pg_ctl stop -D {{ postgresql_data_directory }}
             removes: "{{ postgresql_data_directory }}/postmaster.pid"
-        - name: Creating Repuser Exists Signal File
+        - name: Creating Replication User Signal File
           file:
             path: "{{ postgresql_data_directory }}/.repuser_exists.signal"
             state: touch
       become_user: postgres
       when: not _repuser_exists_signal.stat.exists
-    - name: Editing HBA File
+    - name: Configuring Client Authentication
       blockinfile:
         path: "{{ postgresql_data_directory }}/pg_hba.conf"
         block: |

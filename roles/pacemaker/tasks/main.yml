@@ -8,7 +8,7 @@
     enablerepo: "{{ ansible_distribution_major_version is version('9', '>=') | ternary('highavailability', 'ha') }}"
 - name: Gathering Service Facts
   service_facts:
-- name: Opening Pacemaker Ports
+- name: Opening Firewall Ports for Pacemaker
   firewalld:
     port: "{{ item }}"
     state: enabled
@@ -24,7 +24,7 @@
     name: pcsd
     state: started
     enabled: true
-- name: Getting Shadow Entry
+- name: Gathering hacluster Shadow Entry
   getent:
     database: shadow
     key: hacluster
@@ -34,7 +34,7 @@
     password: "{{ pacemaker_password | password_hash('sha512') }}"
   when: getent_shadow.hacluster.0 in ['!', '*', '!!']
 - block:
-    - name: Checking if hacluster User is Authenticated
+    - name: Gathering pcsd Authentication Status
       stat:
         path: /var/lib/pcsd/known-hosts
       register: _known_hosts
@@ -56,11 +56,11 @@
         - name: Aborting Pacemaker Setup
           fail:
     - block:
-        - name: Checking if Corosync Config File Exists
+        - name: Gathering Corosync Configuration Status
           stat:
             path: /etc/corosync/corosync.conf
           register: _corosync_conf
-        - name: Setting up Pacemaker Cluster
+        - name: Configuring Pacemaker Cluster
           command:
             cmd: >
               pcs cluster setup {{ pacemaker_cluster_name  }}
@@ -83,11 +83,11 @@
     params:
       PCMK_fail_fast: 'yes'
       PCMK_panic_action: sync-reboot
-- name: Checking if Logind Config File Exists
+- name: Gathering logind Configuration Status
   stat:
     path: /etc/systemd/logind.conf
   register: _logind_conf_stat
-- name: Copying Logind Config File
+- name: Copying logind Config File
   copy:
     src: /usr/lib/systemd/logind.conf
     dest: /etc/systemd/logind.conf

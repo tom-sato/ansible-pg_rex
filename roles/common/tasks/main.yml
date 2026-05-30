@@ -1,12 +1,12 @@
 ---
-- name: Installing Python
+- name: Installing Python 3
   raw: which python3 || (yum -qy install python3 && exit 100)
   register: _yum
   changed_when: _yum.rc != 0
   failed_when: _yum.rc not in [0, 100]
-- name: Gathering Facts
+- name: Gathering System Facts
   setup:
-- name: Checking if Locale Data is Installed
+- name: Gathering Available Locales
   command:
     cmd: localectl list-locales
   register: _localectl_list_locales
@@ -15,48 +15,48 @@
   yum:
     name: glibc-langpack-{{ system_locale.split('_').0 }}
   when: system_locale not in _localectl_list_locales.stdout_lines
-- name: Checking if System Locale is Set
+- name: Gathering Locale Configuration
   command:
     cmd: localectl
   register: _localectl
   changed_when: false
-- name: Setting System Locale
+- name: Configuring System Locale
   command:
     cmd: localectl set-locale LANG={{ system_locale }}
   when: "_localectl.stdout is not search('System Locale: LANG=' + system_locale)"
-- name: Checking if System Time Zone is Set
+- name: Gathering Time Zone Configuration
   command:
     cmd: timedatectl
   register: _timedatectl
   changed_when: false
-- name: Setting System Time Zone
+- name: Configuring System Time Zone
   command:
     cmd: timedatectl set-timezone {{ system_timezone }}
   when: "_timedatectl.stdout is not search('Time zone: ' + system_timezone)"
-- name: Adding Entries to Hosts File
+- name: Updating Hosts File
   blockinfile:
     path: /etc/hosts
     block: |
       {% for item in groups.all %}
       {{ hostvars[item]['ansible_' + s_lan_interface].ipv4.address }} {{ hostvars[item].ansible_fqdn }} {{ item }}
       {% endfor %}
-- name: Checking if Partition Has Free Space
+- name: Gathering Partition Information
   command:
     cmd: parted -s {{ root_device | regex_replace('\d+$') }} unit % print free
   register: _parted
   changed_when: false
 - block:
-    - name: Installing growpart
+    - name: Installing growpart Utility
       yum:
         name: cloud-utils-growpart
-    - name: Extending Partition
+    - name: Extending Root Partition
       command:
         cmd: growpart {{ root_device | regex_replace('(\d+)$', ' \1') }}
       register: _growpart
       changed_when: _growpart.stdout is search('CHANGED')
       failed_when: _growpart.rc != 0 and _growpart.stdout is not search('NOCHANGE')
   when: _parted.stdout_lines[-1] is search('Free Space') and _parted.stdout_lines[-1] is not search('0.00%')
-- name: Extending Filesystem
+- name: Extending Root Filesystem
   command:
     cmd: xfs_growfs /
   register: _xfs_growfs

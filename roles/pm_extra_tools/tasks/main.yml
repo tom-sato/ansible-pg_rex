@@ -4,16 +4,16 @@
     name: "{{ pm_extra_tools_download_url }}"
     disable_gpg_check: true
 - block:
-    - name: Getting CIDR Prefixes
+    - name: Gathering CIDR Prefixes
       set_fact:
         _s_lan_prefix: "{{ '%s/%s' | format(ansible_facts[s_lan_interface].ipv4.network, ansible_facts[s_lan_interface].ipv4.netmask) | ansible.utils.ipaddr('prefix') }}"
         _d_lan_prefix: "{{ '%s/%s' | format(ansible_facts[d_lan_interface].ipv4.network, ansible_facts[d_lan_interface].ipv4.netmask) | ansible.utils.ipaddr('prefix') }}"
-    - name: Templating Resource Definition CSV File
+    - name: Creating Resource Definition CSV File
       template:
         src: ./pm_pcsgen_env.csv.j2
         dest: ./pm_pcsgen_env.csv
       register: _pm_pcsgen_env
-    - name: Checking if Resource Definition XML File Exists
+    - name: Gathering Resource Definition XML File Status
       stat:
         path: ./pm_pcsgen_env.xml
       register: _pm_pcsgen_env_xml

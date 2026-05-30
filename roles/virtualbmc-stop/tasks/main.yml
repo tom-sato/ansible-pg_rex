@@ -1,28 +1,28 @@
 ---
-- name: Checking if VirtualBMC Server is Running
+- name: Gathering VirtualBMC Server Status
   command:
     cmd: pgrep -f ./venv/bin/vbmcd
   register: _pgrep
   changed_when: false
   failed_when: false
 - block:
-    - name: Gathering Virtual Machine Information
+    - name: Gathering VirtualBMC Instance Information
       command:
         cmd: ./venv/bin/vbmc list -f value -c "Domain name"
       register: _vbmc
       changed_when: false
-    - name: Removing VirtualBMC
+    - name: Removing VirtualBMC Instances
       command:
         cmd: ./venv/bin/vbmc delete {{ item }}
       become: true
       loop: "{{ _vbmc.stdout_lines }}"
   when: _pgrep.rc == 0
-- name: Checking if IP Address is Added
+- name: Gathering IP Address Status
   command:
     cmd: ip addr
   register: _ip
   changed_when: false
-- name: Removing IP Address
+- name: Removing IP Addresses
   command:
     cmd: ip addr del {{ item.value }}/{{ '%s/%s' | format(ansible_facts.default_ipv4.network, ansible_facts.default_ipv4.netmask) | ansible.utils.ipaddr('prefix') }} dev {{ ansible_facts.default_ipv4.interface }}
   become: true
