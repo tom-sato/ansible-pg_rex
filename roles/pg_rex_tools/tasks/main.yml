@@ -55,14 +55,14 @@
 - name: Disabling PostgreSQL Version Check in PGRex
   lineinfile:
     path: "{{ _find_pgrex.files | map(attribute='path') | first }}/common.pm"
-    regexp: ^(\s+)(if \(int\(\$version_num / 10000\) != \d+)(\){)$
-    line: \1#\2\3\n\1\2 && 0\3
+    regexp: ^(\s+if \()int\(\$version_num / 10000\) != \d+(\){)$
+    line: \g<1>0\2
     backrefs: true
 - name: Removing --no-manifest from pg_basebackup Command
   replace:
     path: /usr/local/bin/pg-rex_standby_start
-    regexp: ^(\s+)(.+)(--no-manifest )(.+)$
-    replace: \1#\2\3\4\n\1\2\4
+    regexp: '--no-manifest '
+    replace: ''
   when: postgresql_version is version('12', '<=')
 - name: Excluding Summaries Directory from Archive Check
   replace:
