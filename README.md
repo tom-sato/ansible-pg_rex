@@ -1,7 +1,7 @@
 Ansible Playbook for PG-REX
 ===========================
 
-Ansible playbook that set up a PostgreSQL cluster with Pacemaker based on the PG-REX standard.
+An Ansible playbook that sets up a PostgreSQL cluster with Pacemaker based on the PG-REX standard.
 
 ![System Architecture](./img/system_architecture.png)
 
@@ -12,17 +12,17 @@ The playbook is tested with the following software versions:
 
 * VirtualBox 7.1.x
 * Vagrant 2.4.x
-* Vagrant box
+* Vagrant boxes
   * [bento/rockylinux-8](https://app.vagrantup.com/bento/boxes/rockylinux-8)
   * [bento/rockylinux-9](https://app.vagrantup.com/bento/boxes/rockylinux-9)
   * [bento/rockylinux-10](https://app.vagrantup.com/bento/boxes/rockylinux-10)
 * Ansible 2.16.x
-* PG-REX 14 - 18
-  * PostgreSQL 14.x - 18.x
-  * Pacemaker 2.1.x, 3.0.x
+* PG-REX 14 to 18
+  * PostgreSQL 14.x to 18.x
+  * Pacemaker 2.1.x and 3.0.x
   * Pacemaker Extra Tools ([pm\_extra\_tools](https://github.com/linux-ha-japan/pm_extra_tools)) 1.8.1
   * PG-REX Operation Tools ([PG-REX-tools](https://github.com/ossc-db/PG-REX-tools)) 15.1 on EL8, 17.0 on EL9, 18.0 on EL10
-* VirtualBMC VirtualBox-ported edition ([virtualbmc-vbox](https://github.com/kskmori/virtualbmc-vbox)) devel2.0
+* VirtualBMC VirtualBox port ([virtualbmc-vbox](https://github.com/kskmori/virtualbmc-vbox)) devel2.0
 
 Usage
 -----
@@ -103,7 +103,7 @@ The following playbooks are available:
 
 * `setup.yml` - Set up a PostgreSQL cluster with Pacemaker based on the PG-REX standard.
 * `virtualbmc-start.yml` - Starts the VirtualBMC server.
-* `virtualbmc-stop.yml` - Stops the VirtualBMC Server.
+* `virtualbmc-stop.yml` - Stops the VirtualBMC server.
 
 Variables
 ---------
@@ -111,8 +111,8 @@ Variables
 The following variables are available in the `./group_vars/all.yml` file:
 
 * `s_lan_interface` - Specifies the interface name for the service provision network "S-LAN". The default is `eth1`.
-* `d_lan_interface` - Specifies the interface name for the interconnect communication network "IC-LAN". The default is `eth2`.
-* `ic_lan_interfaces` - Specifies a list of interface names for the data transfer network "D-LAN". The default is `[eth3, eth4]`.
+* `d_lan_interface` - Specifies the interface name for the data transfer network "D-LAN". The default is `eth2`.
+* `ic_lan_interfaces` - Specifies a list of interface names for the interconnect communication network "IC-LAN". The default is `[eth3, eth4]`.
 * `a_lan_interface` - Specifies the interface name for the administration network "Administration LAN". The default is `eth5`.
 * `system_locale` - Specifies the system locale. The default is `ja_JP.UTF-8`.
 * `system_timezone` - Specifies the system time zone. The default is `Asia/Tokyo`.
@@ -130,12 +130,12 @@ The following variables are available in the `./group_vars/all.yml` file:
 * `postgresql_primary_address` - Specifies the virtual IP address for the primary connection. The default is `192.168.56.111`.
 * `postgresql_standby_address` - Specifies the virtual IP address for the standby connection. The default is `192.168.56.112`.
 * `monitored_addresses` - Specifies the IP addresses to be monitored for health checks. The default is the server's default gateway IP address.
-* `monitored_devices` - Specifies the storage devices to be monitored for health checks. The default is all storage devices on the server.
+* `monitored_devices` - Specifies the storage devices to be monitored for health checks. The default is all storage devices detected on the server.
 * `ipmi_addresses` - Specifies a hash of the IP address for IPMI connection keyed by the hostname. The default is `{node-1: 172.23.135.101, node-2: 172.23.135.102}`.
 * `ipmi_user` - Specifies the username for IPMI connection. The default is `Administrator`.
 * `ipmi_password` - Specifies the password for the IPMI user. The default is `adminpasswd`.
-* `pm_extra_tools_download_url`- Specifies the Pacemaker Extra Tools download URL.
-* `pg_rex_tools_download_url`- Specifies the PG-REX Operation Tools download URL.
+* `pm_extra_tools_download_url` - Specifies the Pacemaker Extra Tools download URL.
+* `pg_rex_tools_download_url` - Specifies the PG-REX Operation Tools download URL.
 
 License
 -------
