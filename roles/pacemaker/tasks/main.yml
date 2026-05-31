@@ -6,6 +6,7 @@
       - pacemaker
       - fence-agents-all
     enablerepo: "{{ ansible_distribution_major_version is version('9', '>=') | ternary('highavailability', 'ha') }}"
+    exclude: "{{ ansible_distribution_major_version is version('9', '==') | ternary(['ruby-default-gems-4.*', 'rubygem-rexml-3.4.*'], omit) }}"
 - name: Gathering Service Facts
   service_facts:
 - name: Opening Firewall Ports for Pacemaker
